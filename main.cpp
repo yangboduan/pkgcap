@@ -16,18 +16,19 @@ using namespace std;
 
 void getPacket(u_char * arg, const struct pcap_pkthdr * pkthdr, const u_char * packet)  
 { 
-    struct in_addr addr;
+    struct in_addr addr;//用来表示一个32位的IPv4地址的结构体
     struct ether_header *ethernet_hdrptr; //以太网头部 
     unsigned short ethernet_type;           //二层头部的以太网类型 
     struct iphdr *iphdrptr;  //IP头部结构体 
     struct tcphdr *tcphdrptr;//TCP头部结构体 
     struct udphdr *udphdrptr;//UDP头部结构体
-    struct ether_arp *arp;
+    struct ether_arp *arp__packet;
+    char buffer[ETH_FRAME_LEN];//以太网正的最大长度
  
     int * id = (int *)arg;  
     unsigned char *mac_string;
                 
-    printf("抓包时间: %s", ctime((const time_t *)&pkthdr->ts.tv_sec));  
+    printf("抓包时间: %s", ctime((const time_t *)&pkthdr->ts.tv_sec)); //输出抓包时间 
  
     ethernet_hdrptr = (struct ether_header *)packet;
    
@@ -38,7 +39,6 @@ void getPacket(u_char * arg, const struct pcap_pkthdr * pkthdr, const u_char * p
     //分析二层头部信息 
     cout <<"二层头部解析: ["; 
     mac_string = (unsigned char *)ethernet_hdrptr->ether_shost;//获取源mac地址
-    //cout <<*(mac_string + 0); 
     printf("源MAC地址: %02x:%02x:%02x:%02x:%02x:%02x  ",*(mac_string+0),*(mac_string+1),*(mac_string+2),*(mac_string+3),*(mac_string+4),*(mac_string+5)); //输出源MAC地址
 
     mac_string = (unsigned char *)ethernet_hdrptr->ether_dhost;//获取目的mac  
@@ -55,8 +55,14 @@ void getPacket(u_char * arg, const struct pcap_pkthdr * pkthdr, const u_char * p
 	addr.s_addr = iphdrptr->saddr;//目的IP地址
 	cout<<"源IP地址:"<< inet_ntoa(addr) <<"  "; 
 	addr.s_addr = iphdrptr->daddr;//目的IP地址
-	cout<<"目的IP地址:"<< inet_ntoa(addr)<<"  ";  
-	cout <<"Protocol:"; 
+	cout<<"目的IP地址:"<< inet_ntoa(addr)<<"  ";
+	//cout<<" version:"<<iphdrptr->version;
+	cout<<"  total_len:"<<iphdrptr->tot_len 
+	//<< "  TOS:"<<iphdrptr->tos
+	<<"  id:"<<iphdrptr->id
+	<<"  ttl:"<<(int)iphdrptr->ttl
+	<<" "; 
+	cout <<" Protocol:"; 
 	switch(iphdrptr->protocol){//三层IP报文头部IP协议类型解析
 	    case 1://ICMP
 	    {
@@ -69,7 +75,14 @@ void getPacket(u_char * arg, const struct pcap_pkthdr * pkthdr, const u_char * p
 		//分析四层头部信息
 		cout <<"四层头部解析: ["; 
 		tcphdrptr = (struct tcphdr*)(packet+sizeof(struct ether_header)+sizeof(struct iphdr));//得到tcp包头
-		cout <<"源端口:"<<ntohs(tcphdrptr->source)<<"  目的端口:"<<ntohs(tcphdrptr->dest);
+		cout <<"源端口:"<<ntohs(tcphdrptr->source)<<"  目的端口:"<<ntohs(tcphdrptr->dest)
+	        <<"  seq:"<<tcphdrptr->seq
+		<<"  ack_seq:"<<tcphdrptr->ack_seq
+		<<"  syn:"<<tcphdrptr->syn
+		<<"  fin:"<<tcphdrptr->fin
+		<<"  rst:"<<tcphdrptr->rst
+                <<"  ack:"<<tcphdrptr->ack
+                <<"  urg:"<<tcphdrptr->urg;
 		cout<<" ]";
 		break;
 	    }
@@ -87,7 +100,10 @@ void getPacket(u_char * arg, const struct pcap_pkthdr * pkthdr, const u_char * p
 	} 
     }
     else if (ethernet_type == ETHERTYPE_ARP){//ARP protocol
-  	cout <<"Type:ARP ]"<<endl;
+	struct ether_arp* arp=(struct ether_arp*)(buffer+14);
+	//cout <<"Hardware_Type:"<<ntohs(arp->arp_hrd)
+	
+  	cout <<"  Type:ARP ]"<<endl;
     }
     else if (ethernet_type == 0x0835)//ARP protocol
   	cout <<"以太网类型:RARP protocol"<<endl;
@@ -115,7 +131,7 @@ int main()  {
       
     if(interfaceName)  
     { 
-      cout<<"Listen on interface "<<interfaceName<<endl; 
+      cout<<"Listen on interface: "<<interfaceName<<endl<<endl; 
     }  
     else  
     {  

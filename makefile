@@ -3,7 +3,7 @@ CC       = gcc
 CFLAGS   = -g -Wall
 OBJ      = main.o
 LINKOBJ  = main.o
-BIN      = pktsniff
+BIN      = pkgsniff
 RM       = rm -rf
 LIB	 = -lpcap
 $(BIN): $(OBJ)

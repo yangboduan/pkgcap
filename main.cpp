@@ -18,24 +18,27 @@ void getPacket(u_char * arg, const struct pcap_pkthdr * pkthdr, const u_char * p
 { 
     struct in_addr addr;
     struct ether_header *ethernet_hdrptr; //以太网头部 
+    unsigned short ethernet_type;           //二层头部的以太网类型 
     struct iphdr *iphdrptr;  //IP头部结构体 
     struct tcphdr *tcphdrptr;//TCP头部结构体 
     struct udphdr *udphdrptr;//UDP头部结构体
     struct ether_arp *arp;
  
     int * id = (int *)arg;  
-    unsigned char *mac_string;                
-    unsigned short ethernet_type;           //二层头部的以太网类型 
+    unsigned char *mac_string;
+                
+    printf("抓包时间: %s", ctime((const time_t *)&pkthdr->ts.tv_sec));  
+ 
     ethernet_hdrptr = (struct ether_header *)packet;
    
     //printf("id: %d\n", ++(*id));  //抓包计数
     //printf("Packet length: %d\n", pkthdr->len);  
     //printf("Number of bytes: %d\n", pkthdr->caplen);
-    printf("抓包时间: %s", ctime((const time_t *)&pkthdr->ts.tv_sec));   
   
     //分析二层头部信息 
     cout <<"二层头部解析: ["; 
-    mac_string = (unsigned char *)ethernet_hdrptr->ether_shost;//获取源mac地址 
+    mac_string = (unsigned char *)ethernet_hdrptr->ether_shost;//获取源mac地址
+    //cout <<*(mac_string + 0); 
     printf("源MAC地址: %02x:%02x:%02x:%02x:%02x:%02x  ",*(mac_string+0),*(mac_string+1),*(mac_string+2),*(mac_string+3),*(mac_string+4),*(mac_string+5)); //输出源MAC地址
 
     mac_string = (unsigned char *)ethernet_hdrptr->ether_dhost;//获取目的mac  
@@ -84,13 +87,7 @@ void getPacket(u_char * arg, const struct pcap_pkthdr * pkthdr, const u_char * p
 	} 
     }
     else if (ethernet_type == ETHERTYPE_ARP){//ARP protocol
-  	cout <<"Type:ARP "<<endl;
-	//解析出源目MAC地址 
-	mac_string = (unsigned char *)ethernet_hdrptr->ether_shost;//获取源mac地址  
-	printf("源MAC地址  : %02x:%02x:%02x:%02x:%02x:%02x  ",*(mac_string+0),*(mac_string+1),*(mac_string+2),*(mac_string+3),*(mac_string+4),*(mac_string+5)); //输出源MAC地址
-  
-	mac_string = (unsigned char *)ethernet_hdrptr->ether_dhost;//获取目的mac  
-	printf("目的MAC地址: %02x:%02x:%02x:%02x:%02x:%02x\n",*(mac_string+0),*(mac_string+1),*(mac_string+2),*(mac_string+3),*(mac_string+4),*(mac_string+5)); //输出目的MAC地址 
+  	cout <<"Type:ARP ]"<<endl;
     }
     else if (ethernet_type == 0x0835)//ARP protocol
   	cout <<"以太网类型:RARP protocol"<<endl;
